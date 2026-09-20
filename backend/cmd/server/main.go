@@ -15,6 +15,7 @@ import (
 	"studentos/backend/internal/config"
 	"studentos/backend/internal/dashboard"
 	"studentos/backend/internal/database"
+	"studentos/backend/internal/ingest"
 	"studentos/backend/internal/jobs"
 	"studentos/backend/internal/middleware"
 	"studentos/backend/internal/notifications"
@@ -69,6 +70,13 @@ func main() {
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "healthy", "database": "connected"})
 	})
+
+	// Scheduled ingestion (EventBridge Scheduler -> this route). Not registered at all
+	// unless INGEST_TOKEN is set, so it can never be reachable with an empty secret.
+	if cfg.IngestToken != "" {
+		r.POST("/internal/ingest", ingest.Handler(db, cfg.IngestToken))
+		log.Println("[INFO] Scheduled ingestion route enabled at POST /internal/ingest")
+	}
 
 	// Handlers
 	authHandler := auth.NewHandler(db, cfg)

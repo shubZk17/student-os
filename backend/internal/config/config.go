@@ -23,6 +23,8 @@ type Config struct {
 	RefreshExpirationDays int
 	TrustedPlatform       string
 	DatabaseURL           string
+	// IngestToken guards the scheduled-ingest route. Empty disables the route entirely.
+	IngestToken string
 }
 
 const devJWTSecret = "dev_only_jwt_secret_do_not_use_in_production"
@@ -56,6 +58,7 @@ func Load() (*Config, error) {
 		DBPassword:            getEnv("DB_PASSWORD", "studentos_dev_password"),
 		DBName:                getEnv("DB_NAME", "studentos_db"),
 		DBSSLMode:             getEnv("DB_SSLMODE", "disable"),
+		IngestToken:           getEnv("INGEST_TOKEN", ""),
 		JWTSecret:             getEnv("JWT_SECRET", devJWTSecret),
 		JWTExpirationMinutes:  jwtExp,
 		RefreshExpirationDays: refExp,
