@@ -10,16 +10,32 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"studentos/backend/internal/authz"
 	"studentos/backend/internal/database"
 	"studentos/backend/internal/middleware"
 )
 
 type Handler struct {
-	db *database.DB
+	db    *database.DB
+	authz *authz.Engine
 }
 
-func NewHandler(db *database.DB) *Handler {
-	return &Handler{db: db}
+func NewHandler(db *database.DB, az *authz.Engine) *Handler {
+	return &Handler{db: db, authz: az}
+}
+
+// mayAct loads the application's owner and asks the Cedar policy whether this
+// student may perform action on it. The SQL predicates below still scope every
+// statement by user_id, so this is a readable pre-check rather than the only guard.
+func (h *Handler) mayAct(ctx context.Context, studentID, action, appID string) bool {
+	var owner string
+	if err := h.db.Pool.QueryRow(ctx,
+		`SELECT user_id FROM applications WHERE id = $1`, appID).Scan(&owner); err != nil {
+		return false // missing row or query error: deny, handler reports 404
+	}
+	return h.authz.Can(studentID, action, authz.Resource{
+		Type: authz.TypeApplication, ID: appID, OwnerID: owner,
+	})
 }
 
 // ListApplications returns all applications for the authenticated student
@@ -127,6 +143,12 @@ func (h *Handler) UpdateStage(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
+	if !h.mayAct(ctx, userID, authz.UpdateApplication, appID) {
+		// 404 rather than 403: do not confirm that someone else's record exists.
+		c.JSON(http.StatusNotFound, gin.H{"error": "Application not found"})
+		return
+	}
+
 	query := `
 		UPDATE applications SET
 			stage = $1,
@@ -162,6 +184,12 @@ func (h *Handler) DeleteApplication(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+
+	if !h.mayAct(ctx, userID, authz.DeleteApplication, appID) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Application not found"})
+		return
+	}
+
 	res, err := h.db.Pool.Exec(ctx, `DELETE FROM applications WHERE id = $1 AND user_id = $2`, appID, userID)
 	if err != nil {
 		log.Printf("[ERROR] delete application: %v", err)

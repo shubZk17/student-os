@@ -71,7 +71,7 @@ Browser
 | Component | Detail |
 | --- | --- |
 | Frontend | React 18 + Vite 5 + TypeScript + Tailwind. Build `tsc && vite build` → `dist/`. API base from `VITE_API_URL`, baked at build time. |
-| Backend | Go 1.22, Gin, `pgx/v5`. Entrypoint `backend/cmd/server`. Port from `PORT` (default 8080). Graceful shutdown on SIGINT/SIGTERM present. |
+| Backend | Go 1.23, Gin, `pgx/v5`. Entrypoint `backend/cmd/server`. Port from `PORT` (default 8080). Graceful shutdown on SIGINT/SIGTERM present. |
 | Health | `GET /health` → `{"database":"connected","status":"healthy"}`. Verified live. |
 | Migrations | Embedded SQL, applied automatically on server start (`backend/migrations`). 3 migrations. |
 | Auth | Local. Argon2id password hashing, HS256 JWT access tokens signed with `JWT_SECRET`, opaque UUID refresh tokens persisted in Postgres and single-use. |

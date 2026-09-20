@@ -1,219 +1,296 @@
 # StudentOS
 
-> **One place to understand your college life, discover opportunities, manage your projects, and decide what to do next.**
+> **One platform to discover opportunities, manage applications, and build your career — running entirely on your machine.**
 
-StudentOS is a personal operating system and opportunity discovery platform tailored for college and university students. It replaces the fragmented noise of college ERP portals, WhatsApp broadcast groups, scattered LinkedIn postings, and unorganized email threads with an intelligent, personalized, and explainable opportunity and execution layer.
+StudentOS is a personal opportunity discovery and career management platform for college students. It replaces fragmented internship hunting across LinkedIn, campus portals, and WhatsApp groups with a single intelligent system that matches you to real opportunities from Greenhouse, Lever, and Ashby job boards.
 
----
-
-## Key Features
-
-* **Personalized Opportunity Discovery:** Multi-signal matching engine ranks internships and jobs according to your profile, graduation year, target roles, location preferences, and verified skills.
-* **Explainable Matching ("Why am I seeing this?"):** Every match returns positive reasons (e.g., `✓ Python in profile`, `✓ Preferred location: Bangalore`) and actionable gap analysis (e.g., `⚠ Docker required but not in profile`).
-* **Application Tracker:** Kanban-style application management (`Saved` ➔ `Applied` ➔ `Assessment` ➔ `Interview` ➔ `Offer` / `Rejected`), with notes and an interview date per application.
-* **Projects & Portfolio Showcase:** Maintain portfolio projects linked directly to verified skills that dynamically boost opportunity recommendation scores.
-* **Personalized Dashboard:** A single daily command center highlighting upcoming interview schedules, urgent deadlines, new high matches, and profile completion strength.
-* **Structured Job Ingestion:** Pulls student roles (internships, new-grad, early-career) from public Greenhouse, Lever and Ashby job boards, tags skills, and closes postings that disappear. Runs on demand — see [Current limitations](#current-limitations).
-* **Cloud Deployable:** One-click Render Blueprint (`render.yaml`), with zero LLM or paid search dependencies — matching is deterministic and runs in-process.
+**Build It Track** — WeMakeDevs First Commit. Open source, local-first, reproducible.
 
 ---
 
-## System Architecture
+## The Problem
+
+Students waste hours every week:
+- Scrolling through irrelevant job postings on multiple platforms
+- Losing track of applications across email, spreadsheets, and bookmarks
+- Missing deadlines because there's no central place to manage the pipeline
+- Not understanding _why_ certain opportunities are a good fit
+
+## The Solution
+
+StudentOS combines:
+
+| Feature | What it does |
+|---|---|
+| **Smart Profile** | Academic info, skills, preferences, and a profile strength score |
+| **Opportunity Discovery** | Real internships and jobs pulled from Greenhouse, Lever, and Ashby boards |
+| **Explainable Matching** | Multi-signal scoring with transparent "Why am I seeing this?" explanations |
+| **Application Tracker** | Kanban pipeline: Saved → Applied → Assessment → Interview → Offer/Rejected |
+| **Project Portfolio** | Track projects and link them to skills that boost your match scores |
+| **Command Center** | Dashboard with upcoming interviews, deadlines, and high-match alerts |
+
+---
+
+## Build It Architecture
 
 ```
-                       [ React 18 SPA (Vite + TypeScript + Tailwind) ]
-                                            │
-                                            │ REST APIs / JWT Auth
-                                            ▼
-                           [ Go Backend Server (Gin, pgx) ]
-                ┌───────────────────────────┼───────────────────────────┐
-                ▼                           ▼                           ▼
-        [ Auth & Profile ]         [ Matching Engine ]         [ Ingestion Worker ]
-                │                           │                           │
-                └───────────────────────────┼───────────────────────────┘
-                                            │
-                                            ▼
-                              [ PostgreSQL 16 ]
+                         STUDENT
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │ React 18 SPA  │
+                    │ Vite + TS     │  ← localhost:3000
+                    └───────┬───────┘
+                            │ /api proxy
+                            ▼
+                    ┌───────────────┐
+                    │ Go REST API   │
+                    │ Gin + pgx     │  ← localhost:8080
+                    └───────┬───────┘
+                            │
+                 ┌──────────┴──────────┐
+                 │                     │
+                 ▼                     ▼
+        ┌─────────────────┐    ┌─────────────────┐
+        │ PostgreSQL 16   │    │   LocalStack    │
+        │ + pgvector      │    │ S3 + EventBridge│  ← localhost:4566
+        │ localhost:5432   │    └─────────────────┘
+        └─────────────────┘
+
+        ┌──────────────────────────────────────────┐
+        │              FINCH / DOCKER              │
+        │       Local container environment        │
+        └──────────────────────────────────────────┘
+
+        ┌──────────────────────────────────────────┐
+        │              SAM CLI                     │
+        │       Local serverless development       │
+        └──────────────────────────────────────────┘
 ```
 
 ---
 
 ## Tech Stack
 
-* **Backend:** Go 1.22, Gin HTTP router, `pgx/v5` PostgreSQL driver, Argon2id, JWT.
-* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide React, React Router.
-* **Database:** PostgreSQL 16. The schema declares the `vector` extension and two
-  `embedding` columns, but nothing writes to them yet — see [Current limitations](#current-limitations).
-* **Infrastructure:** Render (`render.yaml`): managed PostgreSQL, Docker web service, static site.
+| Layer | Technology | Purpose |
+|---|---|---|
+| Frontend | React 18, TypeScript, Vite 5, Tailwind CSS | Student-facing SPA |
+| Backend | Go 1.23, Gin, pgx/v5 | REST API, matching engine, ingestion |
+| Database | PostgreSQL 16 + pgvector | Relational data, vector extension (schema-ready) |
+| Containers | **Finch** (or Docker) | Local container runtime and builds |
+| AWS Emulation | **LocalStack** | S3 bucket, EventBridge scheduling |
+| Serverless | **SAM CLI** | Local Lambda invocation for ingestion |
+| Auth | Argon2id + JWT (HS256) | Password hashing, access/refresh tokens |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- [Finch](https://github.com/runfinch/finch) (or Docker + Docker Compose)
+- Git
+
+### One-Command Setup
+
+```bash
+# 1. Clone
+git clone https://github.com/shubZk17/student-os.git
+cd student-os
+
+# 2. Configure
+cp .env.example .env
+
+# 3. Launch everything
+finch compose up -d          # or: docker compose up -d
+
+# 4. Wait for health check
+curl http://localhost:8080/health
+# → {"status":"healthy","database":"connected"}
+```
+
+**That's it.** Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### What Just Started
+
+| Service | URL | Container |
+|---|---|---|
+| Frontend | http://localhost:3000 | `studentos_frontend` |
+| Backend API | http://localhost:8080 | `studentos_backend` |
+| Health Check | http://localhost:8080/health | — |
+| PostgreSQL | localhost:5432 | `studentos_postgres` |
+| LocalStack | http://localhost:4566 | `studentos_localstack` |
+
+### Load Demo Data
+
+```bash
+# After the stack is running:
+make seed-dev
+```
+
+### Pull Real Opportunities
+
+```bash
+# Run the ingestion worker (fetches from live Greenhouse/Lever/Ashby boards):
+finch compose exec backend /app/worker
+```
+
+---
+
+## Local Development (No Containers)
+
+For faster iteration, run the backend and frontend directly:
+
+```bash
+# Terminal 1: Start PostgreSQL only
+make docker-up               # or: finch compose up -d postgres
+
+# Terminal 2: Backend
+cd backend && go run cmd/server/main.go
+
+# Terminal 3: Frontend (with hot reload)
+cd frontend && npm install && npm run dev
+```
+
+Frontend is available at http://localhost:5173, with API proxy to http://localhost:8080.
+
+---
+
+## Explainable Matching
+
+Every opportunity is scored against your profile using a transparent, deterministic formula:
+
+| Signal | Weight | What it measures |
+|---|---|---|
+| Skill Match | 40% | Overlap between your skills and the opportunity's requirements |
+| Role Fit | 20% | Fuzzy match against your target roles |
+| Eligibility | 15% | Degree, graduation year, CGPA compatibility |
+| Location | 10% | Match against your preferred locations |
+| Project Relevance | 5% | Skills from your portfolio projects |
+| Semantic | 10% | _Schema-ready, not yet implemented_ — redistributed across above signals |
+
+Each match includes verified positive signals (e.g., "✓ Python in profile") and gap analysis (e.g., "⚠ Docker required but not in profile").
+
+---
+
+## Build It Technologies
+
+### Finch — Container Runtime
+
+[Finch](https://github.com/runfinch/finch) provides the local container environment. All services (frontend, backend, PostgreSQL, LocalStack) run as containers orchestrated by Compose. The Compose file is fully compatible with both Finch and Docker.
+
+### LocalStack — AWS-Compatible Local Services
+
+[LocalStack](https://localstack.cloud) emulates AWS services locally. StudentOS uses:
+- **S3**: Bucket `studentos-assets` for future resume/portfolio uploads
+- **EventBridge**: Scheduled rule for 6-hour ingestion cadence
+
+No AWS account or credentials required. See `localstack/init-aws.sh`.
+
+### SAM CLI — Serverless Development
+
+[AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/) enables local invocation of the ingestion worker as a Lambda function:
+
+```bash
+cd sam && sam local invoke IngestFunction
+```
+
+The main Go API is **not** converted to Lambda — it remains a conventional server.
 
 ---
 
 ## Project Structure
 
 ```text
-Student OS/
-├── .env.example              # Environment variables template
-├── .gitignore                # Git ignore rules
-├── Makefile                  # Developer ergonomics
-├── docker-compose.yml        # Local PostgreSQL + pgvector
-├── README.md                 # Product documentation
-├── docs/
-│   ├── FEATURES.md           # What the product does today
-│   ├── PRD.md                # Complete Product Requirements Document
-│   └── ARCHITECTURE.md       # Architectural specifications
-├── render.yaml               # Render Blueprint (production deployment)
+student-os/
+├── .env.example              # Environment variables (no secrets)
+├── .gitignore
+├── Makefile                  # Developer commands (finch-up, seed-dev, etc.)
+├── docker-compose.yml        # Full local stack (Finch / Docker)
+├── BUILD_IT.md               # Build It track documentation
+├── README.md                 # This file
+├── render.yaml               # Optional: Render cloud deployment
+├── amplify.yml               # Historical: AWS Amplify (never deployed)
+├── AWS_MIGRATION_PLAN.md     # Historical: Ship It plan (superseded)
+├── localstack/
+│   └── init-aws.sh           # LocalStack S3 + EventBridge setup
+├── sam/
+│   ├── template.yaml         # SAM template for ingestion Lambda
+│   └── samconfig.toml        # SAM local configuration
 ├── seeds/
-│   └── dev_seed.sql          # Demo data, local development only
+│   └── dev_seed.sql          # Demo data (dev only)
 ├── backend/
-│   ├── Dockerfile            # API server + worker image
-│   ├── migrations/           # Embedded SQL migrations, applied on server start
+│   ├── Dockerfile            # Multi-stage Go build
+│   ├── apprunner.yaml        # Historical: App Runner (never deployed)
 │   ├── cmd/
 │   │   ├── server/           # API server entrypoint
-│   │   └── worker/           # Scheduled ingestion worker
+│   │   └── worker/           # Ingestion worker entrypoint
 │   ├── internal/
 │   │   ├── auth/             # Argon2id, JWT, auth handlers
 │   │   ├── users/            # Student profiles & skills
-│   │   ├── jobs/             # Job models & provider adapters
+│   │   ├── jobs/             # Opportunity models & provider adapters
 │   │   ├── matching/         # Explainable matching engine & tests
 │   │   ├── applications/     # Kanban application tracking
 │   │   ├── projects/         # Portfolio & project skills
-│   │   ├── ingest/           # Job-board ingestion, callable from CLI or API
+│   │   ├── ingest/           # Job-board ingestion (CLI + API)
 │   │   ├── notifications/    # In-app notifications
 │   │   ├── dashboard/        # Command-center metrics
 │   │   ├── database/         # Connection pooling
-│   │   └── middleware/       # Auth, CORS, logging
-│   └── go.mod
+│   │   └── middleware/       # Auth, CORS, rate-limiting, logging
+│   └── migrations/           # Embedded SQL migrations (auto-applied)
 └── frontend/
-    ├── src/
-    │   ├── api/              # Typed REST API clients
-    │   ├── components/       # UI components & layouts
-    │   ├── context/          # Authentication context
-    │   ├── pages/            # Views (Dashboard, Jobs, Kanban, Portfolio, Profile)
-    │   ├── types/            # TypeScript data models
-    │   ├── App.tsx           # Router & navigation
-    │   └── main.tsx
-    ├── package.json
-    ├── vite.config.ts
-    └── tailwind.config.js
+    ├── Dockerfile            # Multi-stage Node + nginx
+    ├── nginx.conf            # SPA routing + API proxy
+    ├── vercel.json           # Optional: Vercel deployment
+    └── src/
+        ├── api/              # Typed REST API client
+        ├── components/       # UI components & layouts
+        ├── context/          # Auth context provider
+        ├── pages/            # Views (Dashboard, Jobs, Kanban, Portfolio, Profile)
+        └── types/            # TypeScript data models
 ```
 
 ---
 
-## Quickstart (Local Development)
+## Current Limitations
 
-### 1. Prerequisites
-* Go 1.22+
-* Node.js 20+ / 22+ & npm
-* Docker & Docker Compose (or local PostgreSQL)
+An honest list of what is **not** true of this system today:
 
-### 2. Configure Environment
-```bash
-cp .env.example .env
-```
-
-### 3. Start Database
-```bash
-docker compose up -d
-```
-
-### 4. Run Backend
-```bash
-cd backend
-go run ./cmd/server
-```
-The Go API server will start on `http://localhost:8080` and apply any pending migrations.
-
-Optional: load demo opportunities with `make seed-dev`, and pull real postings with `go run ./cmd/worker`.
-
-### 5. Run Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-The React SPA will be available at `http://localhost:5173`.
+- **Semantic / vector matching is not implemented.** The schema declares `vector(384)` columns and the pgvector extension, but no code generates, stores, or queries embeddings. The 10% semantic weight is redistributed across deterministic signals.
+- **No file uploads.** `resume_url` and `portfolio_url` are text fields for links the student types in. The S3 bucket in LocalStack is provisioned for future use but no upload endpoint exists.
+- **Job ingestion is on-demand, not scheduled.** The ingestion code works and is run manually (`make worker`). EventBridge scheduling is configured in LocalStack as architectural demonstration, but the backend does not poll EventBridge.
+- **Notifications are read-only.** Created by the backend and can be marked read; no push, email, or digest delivery.
+- **Interview scheduling is minimal.** An application carries an `interview_date` field, but there is no calendar integration.
+- **The AWS Ship It migration was attempted and did not succeed.** `AWS_MIGRATION_PLAN.md` documents the plan. No AWS resources were created.
 
 ---
 
-## Explainable Matching Formula
+## Optional Cloud Deployment
 
-$$S = (0.40 \cdot S_{\text{skill}}) + (0.20 \cdot S_{\text{role}}) + (0.15 \cdot S_{\text{elig}}) + (0.10 \cdot S_{\text{loc}}) + (0.05 \cdot S_{\text{proj}}) + (0.10 \cdot S_{\text{sem}})$$
+The Build It canonical environment is **local**. For public demonstration, optional deployments exist:
 
-1. **Stage 1 (Deterministic Filtering):** Filter out expired postings, conflicting degree requirements, and incompatible graduation batches.
-2. **Stage 2 (Multi-Signal Scoring):** Compute weighted overlap of candidate skills, target roles, locations, and portfolio relevance.
-3. **Stage 3 (Explainability):** Generate verified bullet points explaining positive signals and highlight missing requirements.
+| Platform | URL | Status |
+|---|---|---|
+| Frontend (Vercel) | https://student-os-go-solo1.vercel.app | Live |
+| Frontend (Render) | https://studentos-web.onrender.com | Live |
+| API (Render) | https://studentos-api-0yqr.onrender.com | Live (sleeps when idle) |
 
-> **On the semantic term.** `S_sem` is wired into the formula but no embeddings are
-> generated today, so it is always supplied as `0`. The engine then substitutes the mean
-> of the skill, role and location scores, which means that 10% currently acts as extra
-> weight on those three deterministic signals rather than as semantic similarity.
-> The weights are left as-is so the behaviour is not silently changed.
+These are **not** the Build It infrastructure. They are preserved for convenience.
 
 ---
 
-## Live environments
+## Testing
 
-| What | URL |
-| --- | --- |
-| Frontend (Vercel, primary) | https://student-os-go-solo1.vercel.app |
-| Frontend (Render static) | https://studentos-web.onrender.com |
-| API (Render) | https://studentos-api-0yqr.onrender.com |
+```bash
+# Backend unit tests
+make test
 
-Both frontends and the API redeploy automatically on every push to `main`.
-`.github/workflows/ci.yml` runs `go vet`/`go test`/`go build` and the frontend
-build on every push and pull request.
+# Frontend type-check + build
+cd frontend && npm run build
 
-## Deployment (Render)
-
-`render.yaml` defines managed Postgres (private network only), the API (Docker)
-and the static frontend.
-
-1. Push the repo to GitHub, then in Render choose **New → Blueprint** and select it.
-2. When prompted, set:
-   * `ALLOWED_ORIGINS` on `studentos-api`: the frontend URLs, comma-separated
-   * `VITE_API_URL` on `studentos-web`: the API URL
-3. Deploy. The API applies migrations on startup; a failed migration fails the health check,
-   so the previous version keeps serving. `JWT_SECRET` is generated by Render.
-
-The ingestion cron (`backend/cmd/worker`) is **not** deployed: Render has no free cron
-tier. Restore the `type: cron` service in `render.yaml` on a paid plan, or run it by hand
-with `make worker`, to populate opportunities.
-
-## Deployment (Vercel)
-
-The Vercel project builds only `frontend/` (Root Directory = `frontend`). `frontend/vercel.json`
-adds the SPA rewrite that react-router needs and the security headers. Set `VITE_API_URL`
-in the project's environment variables to the API URL.
-
-Demo data (`seeds/`) is never deployed. Job boards can be changed with the
-`GREENHOUSE_BOARDS`, `LEVER_COMPANIES` and `ASHBY_BOARDS` env vars on the worker.
-
----
-
-## Current limitations
-
-An honest list of what is **not** true of the deployed system today.
-
-* **Job ingestion is not scheduled in production.** The ingestion code
-  (`backend/cmd/worker`, `backend/internal/ingest`) works and is run on demand with
-  `make worker`. It is not on a timer, because Render has no free cron tier, so the
-  opportunity set does not refresh by itself. The 6-hour cadence is the intended
-  schedule, not the running one.
-* **Semantic / vector matching is not implemented.** The schema declares the `vector`
-  extension and `embedding vector(384)` columns, but no code generates, stores or
-  queries an embedding. See the note under the matching formula.
-* **No file uploads.** `resume_url` and `portfolio_url` are text fields for links the
-  student pastes in; nothing is stored server-side, and there is no object storage.
-* **Free-tier hosting caveats.** The API sleeps when idle, so the first request after a
-  quiet period is slow. The Render free PostgreSQL instance expires 30 days after
-  creation (created 2026-09-20).
-* **Notifications are read-only in practice.** They are created by the backend and can
-  be marked read; there is no push, email or digest delivery.
-* **Interview scheduling is minimal.** An application can carry an `interview_date`, but
-  there is no calendar integration or reminder delivery.
-* **AWS migration is planned, not done.** `AWS_MIGRATION_PLAN.md` on the
-  `feat/aws-ship-it` branch documents the target AWS architecture and the code prepared
-  for it. No AWS resources exist.
+# Full CI (runs on every push via GitHub Actions)
+# See .github/workflows/ci.yml
+```
 
 ---
 
