@@ -98,27 +98,142 @@ score against every React opening.
 | Authorization | [Cedar](https://www.cedarpolicy.com/) policy engine (`cedar-go`) |
 | Containers | Docker / Finch Compose |
 
+---
+
+## System Architecture
+
+StudentOS is a three-tier application with one detached background worker. Two binaries
+are built from a single Go module: the API server and the ingestion worker. They share
+every internal package — the same models, the same database layer — but run independently,
+so ingestion can never stall a student's request.
+
 ```
-                    STUDENT
-                       │
-                       ▼
-              ┌────────────────┐
-              │  React 18 SPA  │   localhost:3000
-              │   Vite + TS    │
-              └────────┬───────┘
-                       │  /api
-                       ▼
-              ┌────────────────┐
-              │   Go REST API  │   localhost:8080
-              │   Gin + pgx    │   matching · auth · ingestion
-              └────────┬───────┘
-                       │
-                       ▼
-              ┌────────────────┐        ┌──────────────────┐
-              │  PostgreSQL 16 │        │ Greenhouse/Lever │
-              │                │◀───────│   /Ashby boards  │
-              └────────────────┘ ingest └──────────────────┘
+   ┌──────────────────────────────────────────────────────────────────┐
+   │                            BROWSER                                │
+   │   React 18 SPA · Vite · Tailwind · React Router                   │
+   │   Dashboard · Opportunities · Applications · Projects · Profile   │
+   └────────────────────────────┬─────────────────────────────────────┘
+                                │  fetch() with Bearer token
+                                │  auto-refresh on 401, single-flight
+                                ▼
+   ┌──────────────────────────────────────────────────────────────────┐
+   │                   nginx  (container deploys only)                 │
+   │   serves built assets · SPA fallback · proxies /api → backend     │
+   └────────────────────────────┬─────────────────────────────────────┘
+                                │
+                                ▼
+   ┌──────────────────────────────────────────────────────────────────┐
+   │                      GO REST API  (Gin)  :8080                    │
+   │                                                                   │
+   │   middleware chain, in order:                                     │
+   │     Recovery → StructuredLogger → CORS → 1 MiB body cap           │
+   │       → RequireAuth (JWT)  → handler                              │
+   │                                                                   │
+   │   ┌────────────┬────────────┬────────────┬──────────────────┐    │
+   │   │   auth     │   users    │  matching  │  applications    │    │
+   │   │  Argon2id  │  profiles  │  6-signal  │  Kanban + Cedar  │    │
+   │   │  JWT+rotate│  + skills  │  scoring   │  authorization   │    │
+   │   ├────────────┼────────────┼────────────┼──────────────────┤    │
+   │   │   jobs     │  projects  │ dashboard  │  notifications   │    │
+   │   └────────────┴────────────┴────────────┴──────────────────┘    │
+   │                                                                   │
+   │   authz (Cedar) ── policies.cedar embedded at compile time,       │
+   │                    parsed once at startup, checked per request    │
+   └────────────────────────────┬─────────────────────────────────────┘
+                                │  pgx/v5 connection pool
+                                ▼
+   ┌──────────────────────────────────────────────────────────────────┐
+   │                        PostgreSQL 16                              │
+   │   users · refresh_tokens · student_profiles · skills              │
+   │   student_skills · opportunities · opportunity_skills             │
+   │   applications · projects · project_skills · notifications        │
+   │   migrations embedded in the binary, applied automatically        │
+   └──────────────────────────────────────────────────────────────────┘
+                                ▲
+                                │  upsert on (source, external_id)
+   ┌────────────────────────────┴─────────────────────────────────────┐
+   │              INGESTION WORKER   cmd/worker  (separate binary)     │
+   │   fetch → filter student roles → normalize → extract skills       │
+   │        → upsert → close postings that vanished from the board     │
+   └────────────────────────────▲─────────────────────────────────────┘
+                                │  public board APIs
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+         Greenhouse           Lever             Ashby
 ```
+
+### How a request flows
+
+1. The SPA attaches its access token and calls `/api/v1/...`.
+2. Gin runs the middleware chain. Unauthenticated routes (`/auth/*`, opportunity browsing) skip `RequireAuth`; everything else resolves the JWT into a user ID on the request context.
+3. The handler asks Cedar whether this student may act on this record, where ownership applies.
+4. The query runs through the pgx pool — always parameterized, always scoped by owner.
+5. On a `401`, the client silently rotates its refresh token and replays the original request once. Concurrent 401s share a single refresh call, so a page firing four requests at once produces one rotation, not four.
+
+### How a match is computed
+
+When a student opens Opportunities, `GET /recommendations` runs a two-stage pipeline:
+
+```
+  ONE query loads the candidate profile
+  (degree · grad year · CGPA · skills · project skills
+   · target roles · locations · already-applied IDs)
+                    │
+                    ▼
+  ┌─────────────────────────────────────────┐
+  │  STAGE 1 — deterministic hard filters   │
+  │  drop: inactive · past deadline          │
+  │        already applied · degree mismatch │
+  │        graduation-year mismatch          │
+  └────────────────┬────────────────────────┘
+                   │  survivors only
+                   ▼
+  ┌─────────────────────────────────────────┐
+  │  STAGE 2 — weighted signal scoring      │
+  │  skill 40 · role 20 · eligibility 15    │
+  │  location 10 · project 5 · semantic 10  │
+  │  each signal appends its own reason     │
+  └────────────────┬────────────────────────┘
+                   │
+                   ▼
+    sorted by score, returned with
+    matched_reasons + missing_requirements
+```
+
+Stage 1 is a hard gate, not a penalty — an ineligible posting is removed rather than
+ranked low, so a student never sees a role they cannot apply for. Stage 2 never reduces a
+score to a bare number: every signal that fires appends the sentence explaining it, which
+is what the "Why you match" panel renders.
+
+### How authentication works
+
+```
+  register / login
+        │
+        ├── password → Argon2id (64 MB, 3 iterations, bounded concurrency)
+        │
+        └── issues a token PAIR:
+              access token   JWT HS256, 15 minutes, stateless
+              refresh token  opaque UUID, 7 days, SHA-256 hashed in the DB
+
+  refresh  →  old token revoked, new pair issued, in one transaction
+  logout   →  refresh token revoked
+```
+
+Refresh tokens are single-use: rotating one immediately revokes it. Only the hash is
+stored, so a database leak does not yield usable tokens.
+
+### Authorization: two layers, on purpose
+
+Ownership is enforced twice. The Cedar policy in
+[`backend/internal/authz/policies.cedar`](backend/internal/authz/policies.cedar) states the
+rule in one readable, testable place and is checked *before* the query. The SQL predicate
+`AND user_id = $n` is deliberately kept underneath it. If a handler ever forgets to ask
+Cedar, the database still refuses. Cedar is the auditable statement of intent; SQL is the
+backstop.
+
+Denials return `404`, not `403` — confirming that another student's record exists is itself
+a leak.
 
 ---
 
@@ -207,11 +322,14 @@ All routes are prefixed `/api/v1`. Protected routes take `Authorization: Bearer 
 
 ### Security
 
-- Passwords hashed with Argon2id (64 MB, 3 iterations), with bounded concurrency so a login burst can't exhaust memory
-- Short-lived access tokens with single-use rotating refresh tokens
-- Every query parameterized; every student-owned record scoped by owner in SQL
-- Ownership rules additionally declared in a readable [Cedar policy](backend/internal/authz/policies.cedar) and checked before the query runs — the SQL predicate stays as a backstop
-- Rate limiting on credential routes, strict CORS allowlist, 1 MiB request cap, and production config validation that refuses to boot with development secrets
+Authentication and the two authorization layers are described under
+[System Architecture](#system-architecture). Beyond those:
+
+- Every query is parameterized; every student-owned record is scoped by owner in SQL
+- Rate limiting on credential routes (30 attempts / 5 minutes), sized so a shared campus NAT IP isn't locked out by normal use
+- Strict CORS allowlist, 1 MiB request body cap, and trusted-proxy handling that never reads a forgeable `X-Forwarded-For`
+- Production config validation refuses to boot with a development JWT secret, a blank database password, `sslmode=disable`, or `ALLOWED_ORIGINS=*`
+- The internal ingestion route is not registered at all unless its shared secret is configured, and compares it in constant time
 
 ---
 
