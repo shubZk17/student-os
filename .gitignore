@@ -43,6 +43,5 @@ volume/
 
 # Local-only notes. docs/ARCHITECTURE.md still describes the abandoned AWS Ship It
 # design and would be misleading if published, so it stays untracked until rewritten.
-# BUILD_IT.md is a deliverable and IS tracked.
 docs/
 

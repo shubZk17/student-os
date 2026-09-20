@@ -285,9 +285,8 @@ The canonical environment is local. Optional deployment configs are included:
 | Vercel (frontend) | `frontend/vercel.json` | Live — https://student-os-go-solo1.vercel.app |
 | Render (frontend + API + Postgres) | `render.yaml` | Live — API sleeps when idle |
 
-`amplify.yml`, `backend/apprunner.yaml`, and `AWS_MIGRATION_PLAN.md` are historical
-artifacts of an AWS migration that was planned but never deployed. See
-[BUILD_IT.md](BUILD_IT.md) for the container and AWS-compatible local tooling setup.
+`amplify.yml` and `backend/apprunner.yaml` are historical artifacts of a cloud migration
+that was planned but never deployed.
 
 ---
 
