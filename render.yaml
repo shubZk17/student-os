@@ -4,7 +4,7 @@ databases:
   - name: studentos-db
     databaseName: studentos_db
     user: studentos
-    plan: 0.1c-256mb # Basic 256 MB; move to 0.5c-1g as data grows
+    plan: free # ponytail: free Postgres expires after 30 days; move to 0.1c-256mb to keep the data
     postgresMajorVersion: "16"
     ipAllowList: [] # no public access; services connect over the private network
 
@@ -16,7 +16,7 @@ services:
     dockerContext: ./backend
     buildFilter:
       paths: ["backend/**"]
-    plan: 0.5c-512mb
+    plan: free # ponytail: free web services sleep when idle; first request after a sleep is slow
     healthCheckPath: /health # also gates deploys: migrations run at startup
     envVars:
       - key: ENV
@@ -40,33 +40,9 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false # the static site's URL, e.g. https://studentos-web.onrender.com
 
-  - type: cron
-    name: studentos-job-sync
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    dockerCommand: /app/worker
-    buildFilter:
-      paths: ["backend/**"]
-    schedule: "0 */6 * * *"
-    plan: 0.5c-512mb
-    envVars:
-      - key: ENV
-        value: production
-      - key: DB_HOST
-        fromDatabase: { name: studentos-db, property: host }
-      - key: DB_PORT
-        fromDatabase: { name: studentos-db, property: port }
-      - key: DB_USER
-        fromDatabase: { name: studentos-db, property: user }
-      - key: DB_PASSWORD
-        fromDatabase: { name: studentos-db, property: password }
-      - key: DB_NAME
-        fromDatabase: { name: studentos-db, property: database }
-      - key: DB_SSLMODE
-        value: require
-      # Optional overrides (defaults in backend/cmd/worker/main.go):
-      # GREENHOUSE_BOARDS, LEVER_COMPANIES, ASHBY_BOARDS
+  # The studentos-job-sync cron (backend/cmd/worker) is not deployed: Render has no
+  # free cron tier. Restore the `type: cron` service here on a paid plan to resume
+  # 6-hourly job ingestion. Worker code is unchanged and still runs via `make worker`.
 
   - type: web
     name: studentos-web
