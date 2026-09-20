@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  StudentOS Build It — SAM template for local serverless development.
+  This template defines the ingestion worker as a container-based Lambda
+  for local testing with SAM CLI. The main Go API remains a conventional
+  server and is NOT converted to Lambda.
+
+Globals:
+  Function:
+    Timeout: 900  # 15 minutes, matching the worker's own context timeout
+
+Parameters:
+  DatabaseURL:
+    Type: String
+    Default: "postgres://studentos:studentos_dev_password@host.docker.internal:5432/studentos_db?sslmode=disable"
+    Description: PostgreSQL connection string (host.docker.internal resolves to host from container)
+
+Resources:
+  # -----------------------------------------------------------------------
+  # IngestFunction: Wraps backend/cmd/worker as a Lambda for local testing.
+  #
+  # In production, ingestion runs either:
+  #   - As a CLI worker (make worker / go run cmd/worker)
+  #   - Via the API route POST /internal/ingest (triggered by EventBridge)
+  #
+  # This Lambda definition lets developers test the ingestion pipeline
+  # through SAM CLI locally, demonstrating serverless development tooling.
+  # -----------------------------------------------------------------------
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: studentos-ingest
+      PackageType: Image
+      ImageUri: studentos-backend:latest
+      ImageConfig:
+        Command: ["/app/worker"]
+      Architectures:
+        - x86_64
+      MemorySize: 512
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseURL
+          ENV: development
+      Events:
+        ScheduledIngestion:
+          Type: Schedule
+          Properties:
+            Schedule: rate(6 hours)
+            Description: "Trigger job ingestion every 6 hours"
+            Enabled: true
+    Metadata:
+      DockerTag: latest
+      DockerContext: ../backend
+      Dockerfile: Dockerfile
+
+  # -----------------------------------------------------------------------
+  # S3 Bucket for assets (matches LocalStack init-aws.sh)
+  # -----------------------------------------------------------------------
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: studentos-assets
+
+Outputs:
+  IngestFunctionArn:
+    Description: "Ingestion Lambda function ARN"
+    Value: !GetAtt IngestFunction.Arn
+
+  AssetsBucketName:
+    Description: "S3 bucket for student assets"
+    Value: !Ref AssetsBucket

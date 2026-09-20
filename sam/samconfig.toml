@@ -1,0 +1,17 @@
+# SAM CLI configuration for StudentOS local development.
+# This file configures SAM to work with LocalStack for local testing.
+# No AWS account is required.
+
+version = 0.1
+
+[default.local_invoke]
+[default.local_invoke.parameters]
+docker_network = "student-os_default"
+
+[default.local_start_api]
+[default.local_start_api.parameters]
+docker_network = "student-os_default"
+
+[default.build]
+[default.build.parameters]
+use_container = false

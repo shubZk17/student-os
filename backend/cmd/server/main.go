@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"studentos/backend/internal/applications"
 	"studentos/backend/internal/auth"
+	"studentos/backend/internal/authz"
 	"studentos/backend/internal/config"
 	"studentos/backend/internal/dashboard"
 	"studentos/backend/internal/database"
@@ -78,11 +79,18 @@ func main() {
 		log.Println("[INFO] Scheduled ingestion route enabled at POST /internal/ingest")
 	}
 
+	// Authorization policy (Cedar). Parsed once at startup so a malformed policy
+	// stops the server rather than silently denying every request later.
+	authzEngine, err := authz.New()
+	if err != nil {
+		log.Fatalf("[FATAL] Authorization policy: %v", err)
+	}
+
 	// Handlers
 	authHandler := auth.NewHandler(db, cfg)
 	userHandler := users.NewHandler(db)
 	jobHandler := jobs.NewHandler(db)
-	appHandler := applications.NewHandler(db)
+	appHandler := applications.NewHandler(db, authzEngine)
 	projHandler := projects.NewHandler(db)
 	notifHandler := notifications.NewHandler(db)
 	dashHandler := dashboard.NewHandler(db)

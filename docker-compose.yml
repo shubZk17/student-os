@@ -1,12 +1,29 @@
+# StudentOS — Local Development Stack
+#
+# Works with both Finch and Docker:
+#   finch compose up -d     (Build It track)
+#   docker compose up -d    (standard Docker)
+#
+# Prerequisites: copy .env.example to .env
+#
+# Services:
+#   postgres   — PostgreSQL 16 with pgvector extension
+#   backend    — Go REST API (Gin, port 8080)
+#   frontend   — React SPA served by nginx (port 3000)
+#   localstack — AWS-compatible local services (S3, EventBridge)
+
 services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 + pgvector
+  # ---------------------------------------------------------------------------
   postgres:
     image: pgvector/pgvector:pg16
     container_name: studentos_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: studentos
-      POSTGRES_PASSWORD: studentos_dev_password
-      POSTGRES_DB: studentos_db
+      POSTGRES_USER: ${DB_USER:-studentos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-studentos_dev_password}
+      POSTGRES_DB: ${DB_NAME:-studentos_db}
     ports:
       - "5432:5432"
     volumes:
@@ -17,5 +34,70 @@ services:
       timeout: 5s
       retries: 5
 
+  # ---------------------------------------------------------------------------
+  # Go Backend API
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studentos_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      ENV: development
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-studentos}
+      DB_PASSWORD: ${DB_PASSWORD:-studentos_dev_password}
+      DB_NAME: ${DB_NAME:-studentos_db}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:-dev_only_jwt_secret_do_not_use_in_production}
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+      INGEST_TOKEN: ${INGEST_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # React Frontend (nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: studentos_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # LocalStack — AWS-compatible local services
+  # ---------------------------------------------------------------------------
+  localstack:
+    image: localstack/localstack:latest
+    container_name: studentos_localstack
+    ports:
+      - "4566:4566"         # LocalStack Gateway
+    environment:
+      SERVICES: s3,events
+      DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      DEBUG: 0
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+
 volumes:
   pgdata:
+  localstack_data:

@@ -35,7 +35,13 @@ yarn-error.log*
 
 # AWS & SAM
 .aws-sam/
-samconfig.toml
+sam/.aws-sam/
 
-# Documentation (kept local)
+# LocalStack data (recreated on startup)
+localstack_data/
+volume/
+
+# Local-only notes. docs/ARCHITECTURE.md still describes the abandoned AWS Ship It
+# design and would be misleading if published, so it stays untracked until rewritten.
 docs/
+
