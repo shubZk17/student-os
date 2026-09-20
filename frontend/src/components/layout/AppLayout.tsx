@@ -24,7 +24,7 @@ export const AppLayout: React.FC = () => {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/90 backdrop-blur-md border-t border-slate-800 flex items-center justify-around z-40 px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-950/95 backdrop-blur border-t border-slate-800 flex items-center justify-around z-40 px-2">
         {mobileNav.map((item) => {
           const Icon = item.icon;
           return (
@@ -33,8 +33,8 @@ export const AppLayout: React.FC = () => {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center py-1 px-3 text-[10px] font-medium transition ${
-                  isActive ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'
+                `flex flex-col items-center justify-center py-1 px-3 text-2xs font-medium transition ${
+                  isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300'
                 }`
               }
             >

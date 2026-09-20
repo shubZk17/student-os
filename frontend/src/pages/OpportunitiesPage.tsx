@@ -88,7 +88,7 @@ export const OpportunitiesPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header & Description */}
       <div>
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">
+        <h1 className="text-2xl font-semibold text-white tracking-tight">
           Personalized Opportunity Discovery
         </h1>
         <p className="text-xs text-slate-400 mt-1">
@@ -109,7 +109,7 @@ export const OpportunitiesPage: React.FC = () => {
               placeholder="Search by role, company, or skill (e.g. PyTorch, Go, Bangalore)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/80 border border-slate-700/60 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+              className="w-full bg-slate-950/80 border border-slate-700/60 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"
             />
           </div>
 
@@ -121,7 +121,7 @@ export const OpportunitiesPage: React.FC = () => {
                 onClick={() => setSelectedType(t)}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   selectedType === t
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -152,7 +152,7 @@ export const OpportunitiesPage: React.FC = () => {
             <button
               key={loc}
               onClick={() => setSelectedLocation(loc)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+              className={`px-2.5 py-1 rounded-lg text-2xs font-medium transition ${
                 selectedLocation === loc
                   ? 'bg-slate-700 text-white'
                   : 'bg-slate-800/40 text-slate-400 hover:text-slate-200'
@@ -177,7 +177,7 @@ export const OpportunitiesPage: React.FC = () => {
           <div className="h-12 w-12 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-500 mb-3">
             <Search className="h-6 w-6" />
           </div>
-          <h3 className="font-bold text-sm text-white">No matching opportunities yet</h3>
+          <h3 className="font-semibold text-sm text-white">No matching opportunities yet</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
             Try adjusting your search criteria or adding more skills and target locations to your profile.
           </p>
@@ -187,7 +187,7 @@ export const OpportunitiesPage: React.FC = () => {
           {filteredOpportunities.map((job) => (
             <div
               key={job.id}
-              className="p-5 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 transition flex flex-col justify-between shadow-sm hover:shadow-indigo-500/5"
+              className="card card-hover p-4 flex flex-col justify-between"
             >
               <div>
                 {/* Header */}
@@ -196,14 +196,14 @@ export const OpportunitiesPage: React.FC = () => {
                     {job.company_logo_url ? (
                       <img src={job.company_logo_url} alt={job.company_name} className="h-11 w-11 rounded-2xl object-cover bg-slate-800 border border-slate-700" />
                     ) : (
-                      <div aria-hidden className="h-11 w-11 rounded-2xl shrink-0 bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300">
+                      <div aria-hidden className="h-11 w-11 rounded-2xl shrink-0 bg-slate-800 border border-slate-700 flex items-center justify-center font-semibold text-slate-300">
                         {job.company_name.charAt(0)}
                       </div>
                     )}
                     <div>
                       <h2
                         onClick={() => setActiveModalJob(job)}
-                        className="font-bold text-base text-white hover:text-indigo-300 transition cursor-pointer"
+                        className="font-semibold text-base text-white hover:text-slate-300 transition cursor-pointer"
                       >
                         {job.title}
                       </h2>
@@ -213,12 +213,12 @@ export const OpportunitiesPage: React.FC = () => {
 
                   {job.match_score ? (
                     <div className="flex flex-col items-end">
-                      <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm">
                         {job.match_score}% Match
                       </span>
                     </div>
                   ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400">
+                    <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-slate-800 text-slate-400">
                       {job.type}
                     </span>
                   )}
@@ -242,8 +242,8 @@ export const OpportunitiesPage: React.FC = () => {
 
                 {/* Explainable Signals */}
                 <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 mb-4 space-y-1.5">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
-                    <Sparkles className="h-3 w-3 text-indigo-400" />
+                  <div className="text-2xs font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+                    <Sparkles className="h-3 w-3 text-brand-400" />
                     <span>Why you match:</span>
                   </div>
                   {job.matched_reasons?.slice(0, 2).map((r, i) => (
@@ -263,7 +263,7 @@ export const OpportunitiesPage: React.FC = () => {
 
               {/* Actions Footer */}
               <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
-                <div className="text-[11px] text-slate-500 flex items-center space-x-1">
+                <div className="text-2xs text-slate-500 flex items-center space-x-1">
                   <Clock className="h-3.5 w-3.5" />
                   <span>Closing soon</span>
                 </div>
@@ -273,7 +273,7 @@ export const OpportunitiesPage: React.FC = () => {
                     onClick={() => handleTrackApplication(job, 'SAVED')}
                     className={`p-2 rounded-xl border transition ${
                       savedJobs[job.id]
-                        ? 'bg-indigo-600/10 text-indigo-400 border-indigo-500/30'
+                        ? 'bg-brand-600/10 text-brand-400 border-brand-500/30'
                         : 'bg-slate-800/40 text-slate-400 border-slate-700 hover:text-white'
                     }`}
                     title={savedJobs[job.id] ? 'Saved to Tracker' : 'Save for later'}
@@ -288,10 +288,10 @@ export const OpportunitiesPage: React.FC = () => {
                   <button
                     onClick={() => handleTrackApplication(job, 'APPLIED')}
                     disabled={appliedJobs[job.id]}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-md ${
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 ${
                       appliedJobs[job.id]
                         ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 cursor-default'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
+                        : 'bg-brand-600 hover:bg-brand-500 text-white'
                     }`}
                   >
                     <Send className="h-3.5 w-3.5" />
@@ -307,25 +307,25 @@ export const OpportunitiesPage: React.FC = () => {
       {/* Opportunity Detail Modal */}
       {activeModalJob && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-lg animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
                 {activeModalJob.company_logo_url ? (
                   <img src={activeModalJob.company_logo_url} alt={activeModalJob.company_name} className="h-14 w-14 rounded-2xl object-cover bg-slate-800 border border-slate-700" />
                 ) : (
-                  <div aria-hidden className="h-14 w-14 rounded-2xl shrink-0 bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300">
+                  <div aria-hidden className="h-14 w-14 rounded-2xl shrink-0 bg-slate-800 border border-slate-700 flex items-center justify-center font-semibold text-slate-300">
                     {activeModalJob.company_name.charAt(0)}
                   </div>
                 )}
                 <div>
-                  <h2 className="text-xl font-extrabold text-white">{activeModalJob.title}</h2>
+                  <h2 className="text-xl font-semibold text-white">{activeModalJob.title}</h2>
                   <div className="text-sm font-semibold text-slate-400">
                     {activeModalJob.company_name}
                   </div>
                 </div>
               </div>
               {activeModalJob.match_score && (
-                <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   {activeModalJob.match_score}% Match
                 </span>
               )}
@@ -344,7 +344,7 @@ export const OpportunitiesPage: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                 Detailed Match Breakdown
               </h4>
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
@@ -364,7 +364,7 @@ export const OpportunitiesPage: React.FC = () => {
             </div>
 
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Role Description
               </h4>
               <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
@@ -383,7 +383,7 @@ export const OpportunitiesPage: React.FC = () => {
                 href={activeModalJob.source_url}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5"
+                className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center space-x-1.5"
               >
                 <span>Apply on Official Portal</span>
                 <ExternalLink className="h-3.5 w-3.5" />

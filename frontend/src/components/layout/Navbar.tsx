@@ -34,18 +34,11 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 md:px-8 flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <Sparkles className="h-5 w-5 text-white" />
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center">
+          <Sparkles className="h-4 w-4 text-white" />
         </div>
-        <div>
-          <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
-            StudentOS
-          </span>
-          <span className="ml-2 text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            Production MVP
-          </span>
-        </div>
+        <span className="text-base font-semibold tracking-tight text-white">StudentOS</span>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -53,25 +46,25 @@ export const Navbar: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setShowNotifs(!showNotifs)}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition relative"
+            className="btn-ghost relative px-2 py-2"
             title="Notifications"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center ring-2 ring-slate-900">
+              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-rose-500 text-2xs font-semibold text-white flex items-center justify-center ring-2 ring-slate-900">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showNotifs && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 card bg-slate-900 shadow-xl p-4 z-50">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="font-semibold text-sm text-white">Notifications</span>
+                <span className="text-sm font-medium text-white">Notifications</span>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllRead}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1"
+                    className="text-xs text-brand-400 hover:text-slate-300 flex items-center gap-1"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>Mark all as read</span>
@@ -86,10 +79,10 @@ export const Navbar: React.FC = () => {
                     <div
                       key={n.id}
                       className={`p-3 rounded-xl text-xs transition ${
-                        n.is_read ? 'bg-slate-800/30 text-slate-400' : 'bg-indigo-950/40 text-slate-200 border border-indigo-500/20'
+                        n.is_read ? 'border border-transparent bg-slate-800/30 text-slate-400' : 'border border-slate-800 bg-slate-800/60 text-slate-200'
                       }`}
                     >
-                      <div className="font-semibold text-slate-100 mb-0.5">{n.title}</div>
+                      <div className="font-medium text-slate-100 mb-0.5">{n.title}</div>
                       <div className="line-clamp-2">{n.message}</div>
                     </div>
                   ))
@@ -102,16 +95,16 @@ export const Navbar: React.FC = () => {
         {/* User Badge */}
         {user && (
           <div className="flex items-center space-x-3 pl-3 border-l border-slate-800">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-xs text-white shadow-md">
+            <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-medium text-slate-300">
               {user.full_name?.charAt(0) || <UserIcon className="h-4 w-4" />}
             </div>
             <div className="hidden sm:block text-left">
-              <div className="text-xs font-semibold text-white leading-tight">{user.full_name}</div>
-              <div className="text-[10px] text-slate-400 capitalize">{user.role}</div>
+              <div className="text-xs font-medium text-white leading-tight">{user.full_name}</div>
+              <div className="text-2xs text-slate-500 capitalize">{user.role}</div>
             </div>
             <button
               onClick={logout}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
               title="Logout"
             >
               <LogOut className="h-4 w-4" />

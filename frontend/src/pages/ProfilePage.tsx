@@ -137,7 +137,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">Student Profile</h1>
+        <h1 className="text-2xl font-semibold text-white tracking-tight">Student Profile</h1>
         <p className="text-xs text-slate-400 mt-1">
           Your profile directly powers the explainable matching algorithm. Keep it fresh with your latest coursework, skills, and links.
         </p>
@@ -147,19 +147,19 @@ export const ProfilePage: React.FC = () => {
       <div className="p-5 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1 w-full sm:w-auto">
           <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 text-indigo-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
+            <Sparkles className="h-4 w-4 text-brand-400" />
+            <span className="text-xs font-semibold text-white uppercase tracking-wider">
               Profile Strength: {strength}%
             </span>
           </div>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-2xs text-slate-400">
             {strength < 90 ? 'Add portfolio links and skills to unlock higher match scores.' : 'Excellent! Your profile is primed for 95%+ high-signal matches.'}
           </p>
         </div>
 
         <div className="w-full sm:w-64 bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 rounded-full transition-all duration-700"
+            className="h-full bg-brand-500 rounded-full transition-all duration-500"
             style={{ width: `${strength}%` }}
           ></div>
         </div>
@@ -171,8 +171,8 @@ export const ProfilePage: React.FC = () => {
       <form onSubmit={handleSaveProfile} className="space-y-6">
         {/* Basic Academic Info */}
         <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
-            <GraduationCap className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-sm font-semibold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
+            <GraduationCap className="h-4 w-4 text-brand-400" />
             <span>Academic Background</span>
           </h3>
 
@@ -183,7 +183,7 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
             <div>
@@ -193,7 +193,7 @@ export const ProfilePage: React.FC = () => {
                 value={college}
                 onChange={(e) => setCollege(e.target.value)}
                 placeholder="e.g. Indian Institute of Technology"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -204,7 +204,7 @@ export const ProfilePage: React.FC = () => {
                 value={degree}
                 onChange={(e) => setDegree(e.target.value)}
                 placeholder="e.g. B.Tech, B.E., BCA"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
             <div>
@@ -214,7 +214,7 @@ export const ProfilePage: React.FC = () => {
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
                 placeholder="e.g. Computer Science & Engineering"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -224,7 +224,7 @@ export const ProfilePage: React.FC = () => {
                 type="number"
                 value={gradYear}
                 onChange={(e) => setGradYear(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
             <div>
@@ -234,7 +234,7 @@ export const ProfilePage: React.FC = () => {
                 step="0.1"
                 value={cgpa}
                 onChange={(e) => setCgpa(Number(e.target.value))}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -242,8 +242,8 @@ export const ProfilePage: React.FC = () => {
 
         {/* Skills Tag Management */}
         <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
-            <Sparkles className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-sm font-semibold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
+            <Sparkles className="h-4 w-4 text-brand-400" />
             <span>Verified Skills Graph</span>
           </h3>
 
@@ -252,7 +252,7 @@ export const ProfilePage: React.FC = () => {
               {skillsList.map((skill) => (
                 <span
                   key={skill}
-                  className="px-3 py-1 rounded-xl text-xs font-semibold bg-indigo-950/50 text-indigo-300 border border-indigo-500/30 flex items-center space-x-1.5"
+                  className="px-3 py-1 rounded-xl text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700 flex items-center space-x-1.5"
                 >
                   <span>{skill}</span>
                   <button
@@ -273,7 +273,7 @@ export const ProfilePage: React.FC = () => {
                 onChange={(e) => setNewSkillInput(e.target.value)}
                 onKeyDown={handleAddSkill}
                 placeholder="Type a skill and press Enter (e.g. AWS, Kubernetes, FastAPI)..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
               <button
                 type="button"
@@ -294,8 +294,8 @@ export const ProfilePage: React.FC = () => {
 
         {/* Roles and Preferences */}
         <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
-            <Briefcase className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-sm font-semibold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
+            <Briefcase className="h-4 w-4 text-brand-400" />
             <span>Target Roles & Preferences</span>
           </h3>
 
@@ -309,7 +309,7 @@ export const ProfilePage: React.FC = () => {
                 value={targetRoles}
                 onChange={(e) => setTargetRoles(e.target.value)}
                 placeholder="e.g. Software Engineer, Machine Learning Intern, Cloud Engineer"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -323,7 +323,7 @@ export const ProfilePage: React.FC = () => {
                   value={preferredLocations}
                   onChange={(e) => setPreferredLocations(e.target.value)}
                   placeholder="e.g. Bangalore, Hyderabad, Pune, Remote"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 />
               </div>
 
@@ -332,7 +332,7 @@ export const ProfilePage: React.FC = () => {
                 <select
                   value={workPreference}
                   onChange={(e) => setWorkPreference(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 >
                   <option value="ANY">Any (Remote or Onsite)</option>
                   <option value="REMOTE">Remote Only</option>
@@ -345,8 +345,8 @@ export const ProfilePage: React.FC = () => {
 
         {/* Links & Socials */}
         <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
-            <Github className="h-4 w-4 text-indigo-400" />
+          <h3 className="text-sm font-semibold text-white flex items-center space-x-2 pb-2 border-b border-slate-800">
+            <Github className="h-4 w-4 text-brand-400" />
             <span>Online Presence & Links</span>
           </h3>
 
@@ -358,7 +358,7 @@ export const ProfilePage: React.FC = () => {
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
                 placeholder="https://github.com/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
             <div>
@@ -368,7 +368,7 @@ export const ProfilePage: React.FC = () => {
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
                 placeholder="https://linkedin.com/in/..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
           </div>
@@ -383,7 +383,7 @@ export const ProfilePage: React.FC = () => {
           )}
           <button
             type="submit"
-            className="ml-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center space-x-2 transition shadow-lg shadow-indigo-600/20"
+            className="ml-auto px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center space-x-2 transition shadow-lg"
           >
             <Save className="h-4 w-4" />
             <span>Save Profile</span>

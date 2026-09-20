@@ -95,7 +95,7 @@ export const ProjectsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-white tracking-tight">
             Projects & Portfolio
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -105,7 +105,7 @@ export const ProjectsPage: React.FC = () => {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-2 transition shadow-lg shadow-indigo-600/20"
+          className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center space-x-2 transition shadow-lg"
         >
           <Plus className="h-4 w-4" />
           <span>Add Project</span>
@@ -125,7 +125,7 @@ export const ProjectsPage: React.FC = () => {
           <div className="h-12 w-12 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-500 mb-3">
             <FolderGit2 className="h-6 w-6" />
           </div>
-          <h3 className="font-bold text-sm text-white">No projects added yet</h3>
+          <h3 className="font-semibold text-sm text-white">No projects added yet</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
             Showcase side projects, research publications, or hackathon winners to demonstrate verified skills.
           </p>
@@ -135,12 +135,12 @@ export const ProjectsPage: React.FC = () => {
           {projects.map((p) => (
             <div
               key={p.id}
-              className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-indigo-500/40 transition flex flex-col justify-between shadow-sm"
+              className="p-6 rounded-3xl bg-slate-900/70 border border-slate-800 hover:border-brand-500/40 transition flex flex-col justify-between shadow-sm"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <h2 className="text-base font-bold text-white hover:text-indigo-300 transition">
+                    <h2 className="text-base font-semibold text-white hover:text-slate-300 transition">
                       {p.title}
                     </h2>
                     {p.tagline && <p className="text-xs text-slate-400 mt-0.5">{p.tagline}</p>}
@@ -160,9 +160,9 @@ export const ProjectsPage: React.FC = () => {
 
                 {/* Measurable Metrics Highlight */}
                 {p.metrics && (
-                  <div className="p-3 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 mb-4 flex items-center space-x-2 text-xs text-indigo-300">
-                    <TrendingUp className="h-4 w-4 text-indigo-400 shrink-0" />
-                    <span className="font-medium text-[11px]">{p.metrics}</span>
+                  <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 mb-4 flex items-center space-x-2 text-xs text-slate-300">
+                    <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />
+                    <span className="font-medium text-2xs">{p.metrics}</span>
                   </div>
                 )}
 
@@ -171,7 +171,7 @@ export const ProjectsPage: React.FC = () => {
                   {p.technologies?.map((tech, i) => (
                     <span
                       key={i}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800/80 text-slate-300 border border-slate-700/60"
+                      className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-slate-800/80 text-slate-300 border border-slate-700/60"
                     >
                       {tech}
                     </span>
@@ -197,7 +197,7 @@ export const ProjectsPage: React.FC = () => {
                     href={p.demo_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-indigo-400 hover:text-indigo-300 flex items-center space-x-1.5 transition"
+                    className="text-brand-400 hover:text-slate-300 flex items-center space-x-1.5 transition"
                   >
                     <ExternalLink className="h-4 w-4" />
                     <span>Live Demo</span>
@@ -214,9 +214,9 @@ export const ProjectsPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <form
             onSubmit={handleCreateProject}
-            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-lg max-h-[90vh] overflow-y-auto"
           >
-            <h3 className="text-base font-bold text-white">Add Portfolio Project</h3>
+            <h3 className="text-base font-semibold text-white">Add Portfolio Project</h3>
             {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
 
             <div>
@@ -227,7 +227,7 @@ export const ProjectsPage: React.FC = () => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Distributed Cache Engine"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -238,7 +238,7 @@ export const ProjectsPage: React.FC = () => {
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="e.g. High-throughput in-memory LRU key-value store in Go"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -250,7 +250,7 @@ export const ProjectsPage: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Explain the problem solved, architecture choices, and impact..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -262,7 +262,7 @@ export const ProjectsPage: React.FC = () => {
                 value={techInput}
                 onChange={(e) => setTechInput(e.target.value)}
                 placeholder="e.g. Go (Golang), Docker, PyTorch, PostgreSQL"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -273,7 +273,7 @@ export const ProjectsPage: React.FC = () => {
                 value={metrics}
                 onChange={(e) => setMetrics(e.target.value)}
                 placeholder="e.g. 120k QPS, 94.2% accuracy, 500+ active users"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               />
             </div>
 
@@ -285,7 +285,7 @@ export const ProjectsPage: React.FC = () => {
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
                   placeholder="https://github.com/..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 />
               </div>
               <div>
@@ -295,7 +295,7 @@ export const ProjectsPage: React.FC = () => {
                   value={demoUrl}
                   onChange={(e) => setDemoUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 />
               </div>
             </div>
@@ -310,7 +310,7 @@ export const ProjectsPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md"
+                className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold"
               >
                 Save Project
               </button>

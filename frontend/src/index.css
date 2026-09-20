@@ -4,23 +4,72 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 min-h-screen;
+    @apply bg-slate-950 text-slate-200 min-h-screen text-sm;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Headings carry the weight; body text stays regular. The old UI made almost
+     everything bold, which reads as shouting rather than hierarchy. */
+  h1 { @apply text-2xl font-semibold tracking-tight text-white; }
+  h2 { @apply text-lg font-semibold tracking-tight text-white; }
+  h3 { @apply text-sm font-medium text-white; }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500/70 ring-offset-2 ring-offset-slate-950;
   }
 }
 
-/* Custom modern scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@layer components {
+  /* One surface treatment, used everywhere. Flat: no gradient, no colored glow. */
+  .card {
+    @apply rounded-lg border border-slate-800 bg-slate-900/60;
+  }
+  .card-hover {
+    @apply transition-colors hover:border-slate-700;
+  }
+
+  /* Section label above a group of content. */
+  .eyebrow {
+    @apply text-2xs font-medium uppercase tracking-wider text-slate-500;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2
+           text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-500;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-700 bg-slate-800/60 text-slate-200 hover:bg-slate-800;
+  }
+  .btn-ghost {
+    @apply btn text-slate-400 hover:bg-slate-800/60 hover:text-slate-100;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium text-slate-400;
+  }
+  .input {
+    @apply w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white
+           placeholder:text-slate-600 focus:border-brand-500 focus:outline-none focus:ring-0;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-md border px-2 py-0.5 text-2xs font-medium;
+  }
+  .badge-neutral { @apply badge border-slate-700 bg-slate-800/60 text-slate-300; }
+  .badge-accent  { @apply badge border-brand-500/30 bg-brand-500/10 text-brand-300; }
+  .badge-success { @apply badge border-emerald-500/30 bg-emerald-500/10 text-emerald-400; }
+  .badge-warning { @apply badge border-amber-500/30 bg-amber-500/10 text-amber-400; }
 }
-::-webkit-scrollbar-track {
-  background: #0f172a;
-}
+
+/* Scrollbar: neutral, not a feature. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
+  border: 3px solid #020617;
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
+::-webkit-scrollbar-thumb:hover { background: #334155; }
