@@ -107,60 +107,218 @@ are built from a single Go module: the API server and the ingestion worker. They
 every internal package — the same models, the same database layer — but run independently,
 so ingestion can never stall a student's request.
 
+```mermaid
+flowchart TB
+
+%% ─────────────────────────── CLIENT ───────────────────────────
+subgraph CLIENT["CLIENT — Browser"]
+    direction TB
+    PAGES["React 18 SPA · Vite · Tailwind<br/>Dashboard · Opportunities · Applications<br/>Projects · Profile · Login / Register"]
+    CTX["AuthContext<br/>session state"]
+    APICLIENT["api/client.ts<br/>typed REST client<br/>Bearer token · single-flight 401 refresh"]
+    STORE[("localStorage<br/>access + refresh token")]
+    PAGES --> CTX --> APICLIENT
+    APICLIENT <--> STORE
+end
+
+%% ─────────────────────────── EDGE ───────────────────────────
+subgraph EDGE["EDGE — container deploys only"]
+    NGINX["nginx :3000<br/>static assets · SPA fallback<br/>proxy /api → backend"]
+end
+
+%% ─────────────────────────── API ───────────────────────────
+subgraph API["APPLICATION — Go 1.23 · Gin · :8080"]
+    direction TB
+
+    subgraph MW["Middleware chain — in order"]
+        direction LR
+        M1["Recovery"] --> M2["StructuredLogger"] --> M3["CORS<br/>allowlist"] --> M4["1 MiB<br/>body cap"] --> M5["RequireAuth<br/>JWT → userID"]
+    end
+
+    subgraph PUBLIC["Public routes"]
+        direction TB
+        RAUTH["/auth/register · /login<br/>/refresh · /logout<br/>rate limited 30 / 5 min"]
+        ROPP["/opportunities<br/>/opportunities/:id"]
+        RHEALTH["/health"]
+    end
+
+    subgraph PROT["Protected routes — JWT required"]
+        direction TB
+        RPROF["/profile"]
+        RREC["/recommendations"]
+        RAPP["/applications · /applications/:id"]
+        RPROJ["/projects · /projects/:id"]
+        RNOTIF["/notifications"]
+        RDASH["/dashboard/summary"]
+    end
+
+    subgraph DOMAIN["Domain packages"]
+        direction TB
+        AUTH["auth<br/>Argon2id · JWT HS256<br/>rotating refresh tokens"]
+        USERS["users<br/>profile · skills<br/>strength score"]
+        JOBS["jobs<br/>search · filter · paginate"]
+        MATCH["matching<br/>2-stage engine<br/>6 weighted signals"]
+        APPS["applications<br/>6-stage Kanban"]
+        PROJ["projects<br/>portfolio + skill links"]
+        DASH["dashboard<br/>aggregate metrics"]
+        NOTIF["notifications<br/>read-only today"]
+    end
+
+    subgraph CROSS["Cross-cutting"]
+        direction TB
+        AUTHZ["authz — Cedar<br/>policies.cedar embedded<br/>parsed at startup<br/>checked before every query"]
+        CONFIG["config<br/>env load + production guards"]
+        DBPOOL["database<br/>pgx/v5 pool"]
+        MIGR["migrations<br/>embedded · auto-applied at boot"]
+    end
+
+    MW --> PUBLIC
+    MW --> PROT
+    RAUTH --> AUTH
+    ROPP --> JOBS
+    RPROF --> USERS
+    RREC --> MATCH
+    RAPP --> APPS
+    RPROJ --> PROJ
+    RNOTIF --> NOTIF
+    RDASH --> DASH
+    APPS -.->|"may this student act<br/>on this record?"| AUTHZ
+    MATCH --> JOBS
+end
+
+%% ─────────────────────────── DATA ───────────────────────────
+subgraph DATA["DATA — PostgreSQL 16 + pgvector"]
+    direction LR
+    TIDENT[("users<br/>refresh_tokens")]
+    TPROF[("student_profiles<br/>student_skills<br/>skills")]
+    TOPP[("opportunities<br/>opportunity_skills")]
+    TTRACK[("applications<br/>projects<br/>project_skills<br/>notifications")]
+end
+
+%% ─────────────────────────── WORKER ───────────────────────────
+subgraph WORKER["INGESTION — cmd/worker · separate binary"]
+    direction TB
+    PROVIDERS["provider adapters<br/>Greenhouse · Lever · Ashby"]
+    FILTER["filter to student roles<br/>intern · co-op · new grad · entry"]
+    NORM["normalize<br/>company · title · location<br/>remote · salary · deadline"]
+    SKILLX["extract skills<br/>against reference list"]
+    UPSERT["upsert on source + external_id"]
+    STALE["close postings<br/>no longer on the board"]
+    PROVIDERS --> FILTER --> NORM --> SKILLX --> UPSERT --> STALE
+end
+
+%% ─────────────────────────── EXTERNAL ───────────────────────────
+subgraph EXT["EXTERNAL — public job board APIs"]
+    direction LR
+    GH["Greenhouse"]
+    LV["Lever"]
+    AS["Ashby"]
+end
+
+%% ─────────────────────────── WIRING ───────────────────────────
+APICLIENT -->|"HTTPS · JSON"| NGINX
+NGINX --> MW
+APICLIENT -.->|"direct, no nginx<br/>in local dev"| MW
+
+DOMAIN --> DBPOOL
+DBPOOL --> DATA
+MIGR --> DATA
+
+EXT --> PROVIDERS
+STALE --> DATA
+
+TRIGGER["trigger:<br/>make worker · POST /internal/ingest<br/>token-guarded, constant-time compare"] --> PROVIDERS
 ```
-   ┌──────────────────────────────────────────────────────────────────┐
-   │                            BROWSER                                │
-   │   React 18 SPA · Vite · Tailwind · React Router                   │
-   │   Dashboard · Opportunities · Applications · Projects · Profile   │
-   └────────────────────────────┬─────────────────────────────────────┘
-                                │  fetch() with Bearer token
-                                │  auto-refresh on 401, single-flight
-                                ▼
-   ┌──────────────────────────────────────────────────────────────────┐
-   │                   nginx  (container deploys only)                 │
-   │   serves built assets · SPA fallback · proxies /api → backend     │
-   └────────────────────────────┬─────────────────────────────────────┘
-                                │
-                                ▼
-   ┌──────────────────────────────────────────────────────────────────┐
-   │                      GO REST API  (Gin)  :8080                    │
-   │                                                                   │
-   │   middleware chain, in order:                                     │
-   │     Recovery → StructuredLogger → CORS → 1 MiB body cap           │
-   │       → RequireAuth (JWT)  → handler                              │
-   │                                                                   │
-   │   ┌────────────┬────────────┬────────────┬──────────────────┐    │
-   │   │   auth     │   users    │  matching  │  applications    │    │
-   │   │  Argon2id  │  profiles  │  6-signal  │  Kanban + Cedar  │    │
-   │   │  JWT+rotate│  + skills  │  scoring   │  authorization   │    │
-   │   ├────────────┼────────────┼────────────┼──────────────────┤    │
-   │   │   jobs     │  projects  │ dashboard  │  notifications   │    │
-   │   └────────────┴────────────┴────────────┴──────────────────┘    │
-   │                                                                   │
-   │   authz (Cedar) ── policies.cedar embedded at compile time,       │
-   │                    parsed once at startup, checked per request    │
-   └────────────────────────────┬─────────────────────────────────────┘
-                                │  pgx/v5 connection pool
-                                ▼
-   ┌──────────────────────────────────────────────────────────────────┐
-   │                        PostgreSQL 16                              │
-   │   users · refresh_tokens · student_profiles · skills              │
-   │   student_skills · opportunities · opportunity_skills             │
-   │   applications · projects · project_skills · notifications        │
-   │   migrations embedded in the binary, applied automatically        │
-   └──────────────────────────────────────────────────────────────────┘
-                                ▲
-                                │  upsert on (source, external_id)
-   ┌────────────────────────────┴─────────────────────────────────────┐
-   │              INGESTION WORKER   cmd/worker  (separate binary)     │
-   │   fetch → filter student roles → normalize → extract skills       │
-   │        → upsert → close postings that vanished from the board     │
-   └────────────────────────────▲─────────────────────────────────────┘
-                                │  public board APIs
-              ┌─────────────────┼─────────────────┐
-              │                 │                 │
-         Greenhouse           Lever             Ashby
+
+> The diagram renders on GitHub. Solid arrows are the request path; dotted arrows are
+> conditional or alternative paths.
+
+### Data model
+
+`skills` is shared reference data — the same rows are joined by students, opportunities,
+and projects, which is what makes "your project skill matched this requirement" a simple
+join rather than string comparison. Every foreign key cascades on delete, so removing an
+account leaves nothing orphaned.
+
+```mermaid
+erDiagram
+    users ||--o| student_profiles : "has one"
+    users ||--o{ refresh_tokens : "issues"
+    users ||--o{ applications : "tracks"
+    users ||--o{ notifications : "receives"
+
+    student_profiles ||--o{ student_skills : "declares"
+    student_profiles ||--o{ projects : "owns"
+
+    opportunities ||--o{ opportunity_skills : "requires"
+    opportunities ||--o{ applications : "applied to"
+
+    projects ||--o{ project_skills : "demonstrates"
+
+    skills ||--o{ student_skills : ""
+    skills ||--o{ opportunity_skills : ""
+    skills ||--o{ project_skills : ""
+
+    users {
+        uuid id PK
+        text email UK
+        text password_hash "Argon2id"
+        text role
+    }
+    student_profiles {
+        uuid id PK
+        uuid user_id FK
+        text full_name
+        text degree
+        int graduation_year
+        numeric cgpa
+        text_array target_roles
+        text_array preferred_locations
+        text work_preference
+        int profile_strength
+        vector embedding "declared, unused"
+    }
+    opportunities {
+        uuid id PK
+        text source "greenhouse / lever / ashby"
+        text external_id
+        text company_name
+        text title
+        text location
+        bool is_remote
+        text_array eligible_degrees
+        int_array eligible_grad_years
+        numeric min_cgpa
+        timestamp deadline
+        text status
+        vector embedding "declared, unused"
+    }
+    applications {
+        uuid id PK
+        uuid user_id FK
+        uuid opportunity_id FK
+        text stage "SAVED to APPLIED to ASSESSMENT to INTERVIEW to OFFER or REJECTED"
+        timestamp applied_at
+        timestamp interview_date
+        text notes
+    }
+    projects {
+        uuid id PK
+        uuid student_id FK
+        text title
+        text description
+        text github_url
+    }
+    skills {
+        uuid id PK
+        text name UK
+        text category
+    }
 ```
+
+`uq_source_external` on `opportunities` is what makes ingestion idempotent — re-running the
+worker updates existing postings instead of duplicating them. `uq_user_opportunity` on
+`applications` is what lets "save" and "apply" be the same upsert.
 
 ### How a request flows
 
