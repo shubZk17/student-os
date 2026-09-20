@@ -1,0 +1,1 @@
+-- Reference skills are left in place: user profiles and postings reference them.

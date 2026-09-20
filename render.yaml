@@ -1,0 +1,94 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# First sync prompts for the `sync: false` values below.
+databases:
+  - name: studentos-db
+    databaseName: studentos_db
+    user: studentos
+    plan: 0.1c-256mb # Basic 256 MB; move to 0.5c-1g as data grows
+    postgresMajorVersion: "16"
+    ipAllowList: [] # no public access; services connect over the private network
+
+services:
+  - type: web
+    name: studentos-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    buildFilter:
+      paths: ["backend/**"]
+    plan: 0.5c-512mb
+    healthCheckPath: /health # also gates deploys: migrations run at startup
+    envVars:
+      - key: ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase: { name: studentos-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: studentos-db, property: port }
+      - key: DB_USER
+        fromDatabase: { name: studentos-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: studentos-db, property: password }
+      - key: DB_NAME
+        fromDatabase: { name: studentos-db, property: database }
+      - key: DB_SSLMODE
+        value: require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TRUSTED_PLATFORM
+        value: CF-Connecting-IP # set by Cloudflare in front of Render; X-Forwarded-For is spoofable
+      - key: ALLOWED_ORIGINS
+        sync: false # the static site's URL, e.g. https://studentos-web.onrender.com
+
+  - type: cron
+    name: studentos-job-sync
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: /app/worker
+    buildFilter:
+      paths: ["backend/**"]
+    schedule: "0 */6 * * *"
+    plan: 0.5c-512mb
+    envVars:
+      - key: ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase: { name: studentos-db, property: host }
+      - key: DB_PORT
+        fromDatabase: { name: studentos-db, property: port }
+      - key: DB_USER
+        fromDatabase: { name: studentos-db, property: user }
+      - key: DB_PASSWORD
+        fromDatabase: { name: studentos-db, property: password }
+      - key: DB_NAME
+        fromDatabase: { name: studentos-db, property: database }
+      - key: DB_SSLMODE
+        value: require
+      # Optional overrides (defaults in backend/cmd/worker/main.go):
+      # GREENHOUSE_BOARDS, LEVER_COMPANIES, ASHBY_BOARDS
+
+  - type: web
+    name: studentos-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    buildFilter:
+      paths: ["frontend/**"]
+    envVars:
+      - key: VITE_API_URL
+        sync: false # the API's URL, e.g. https://studentos-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
