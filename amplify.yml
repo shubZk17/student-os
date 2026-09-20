@@ -1,0 +1,33 @@
+# AWS Amplify Hosting build spec.
+#
+# This repo is a monorepo, so appRoot points Amplify at frontend/ and everything
+# below runs from there.
+#
+# Two things must be set in the Amplify console, not here:
+#
+#   1. Environment variable VITE_API_URL = the real App Runner service URL.
+#      Vite inlines it at BUILD time, so changing it requires a rebuild, not just
+#      a restart. Set it before the first build or the bundle ships with no API.
+#
+#   2. A rewrite rule for client-side routing:
+#        Source: /<*>   Target: /index.html   Type: 200 (Rewrite)
+#      Without it, refreshing on /dashboard or any deep link returns 404.
+#      (frontend/vercel.json does the same job on Vercel; Amplify needs its own.)
+version: 1
+applications:
+  - appRoot: frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
