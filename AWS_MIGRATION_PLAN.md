@@ -161,7 +161,7 @@ Every row is checked against the repository, and marked with what it costs us in
 | Current | Target | Status | Notes |
 | --- | --- | --- | --- |
 | Vercel + Render static frontend | AWS Amplify Hosting | PLANNED | Straight lift. Needs `VITE_API_URL` build env + SPA rewrite rule. |
-| Render Web Service (Docker) | AWS App Runner | PLANNED | Dockerfile is already App Runner-shaped: configurable `PORT`, health endpoint, non-root, multi-stage. |
+| Render Web Service (Docker) | AWS App Runner | **CONFIG DONE**, not deployed | `backend/apprunner.yaml` added (source-based, no Docker/ECR needed). Dockerfile kept as the image-based alternative. Service not created. |
 | Render PostgreSQL | Amazon RDS PostgreSQL 16 | PLANNED | Schema unchanged. Migrations self-apply on boot. |
 | `CREATE EXTENSION vector` | pgvector on RDS | PLANNED | RDS Postgres 16 supports pgvector. Extension will be enabled so migration 1 succeeds — but see Finding A: **no embeddings are used.** Enabling it is required for the migration to run, not evidence of semantic search. |
 | Local Argon2id + HS256 JWT | Amazon Cognito | **DEFERRED — see §5** | High risk, low hackathon value. Recommendation: keep existing auth. |
@@ -268,6 +268,7 @@ Schedule: `rate(6 hours)`, matching the existing documented cadence.
 | **pgvector unavailable** → migration 1 fails → health check fails → deploy rolls back | High | Enable the extension on RDS *before* first boot. Verify `SELECT * FROM pg_extension`. |
 | **CORS** — Amplify domain unknown until first deploy | Medium | Deploy Amplify first, read the domain, then set `ALLOWED_ORIGINS`. Config rejects `*` in production by design. |
 | **`VITE_API_URL` is baked at build time** | Medium | Amplify must rebuild after the App Runner URL exists. Ordering: App Runner → set Amplify env → rebuild. |
+| **Rate limiter breaks behind App Runner** | High | `c.ClientIP()` resolves to App Runner's proxy, making the 30/5min credential limit global rather than per-client. `TRUSTED_PLATFORM=X-Forwarded-For` is not a fix (client-forgeable). Options recorded in `backend/apprunner.yaml`; **must be decided before launch.** |
 | **Guessing service URLs** | Medium | Already bit us twice this project: `studentos-api.onrender.com` and `student-os.vercel.app` are *other people's* live sites. Always read the real URL from the console; never assume the name. |
 | **Data loss** | High | Render's Postgres holds real data. Export with `pg_dump` before cutover; do not delete Render resources until AWS is verified. |
 | **Secrets in git** | High | App Runner env vars / Secrets Manager only. `.env.example` keeps placeholders. |

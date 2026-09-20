@@ -1,0 +1,53 @@
+# AWS App Runner — source-based deployment (no Docker build, no ECR).
+#
+# Create the service with:
+#   Source            = this GitHub repo, branch main
+#   Source directory  = backend
+#   Deployment        = automatic on push
+#
+# The Dockerfile beside this file stays the alternative path: if you'd rather run
+# the image, build and push it to ECR and create the service from the image instead.
+# Both produce the same binary from ./cmd/server.
+#
+# Secrets are NOT set here — this file is in git. Set DB_*, JWT_SECRET and
+# INGEST_TOKEN in the App Runner console (or from Secrets Manager) as runtime
+# environment variables.
+version: 1.0
+runtime: go1
+build:
+  commands:
+    build:
+      - go build -trimpath -ldflags="-s -w" -o server ./cmd/server
+run:
+  command: ./server
+  network:
+    port: 8080
+  env:
+    - name: PORT
+      value: "8080"
+    - name: ENV
+      value: production
+    # TRUSTED_PLATFORM is deliberately NOT set here. See the warning below.
+
+# ---------------------------------------------------------------------------
+# UNRESOLVED before going live: client IP behind App Runner
+#
+# The credential rate limiter keys on gin's c.ClientIP(). With SetTrustedProxies(nil)
+# and TRUSTED_PLATFORM empty, that resolves to the TCP peer — which behind App Runner
+# is App Runner's own proxy, not the student. Every user would then share one bucket,
+# so 30 logins per 5 minutes becomes a GLOBAL limit: a self-inflicted lockout, and
+# useless as brute-force protection.
+#
+# Setting TRUSTED_PLATFORM=X-Forwarded-For is NOT a fix: gin would take that header's
+# first value, which the client fully controls, so anyone could bypass the limit by
+# forging it.
+#
+# On Render this was handled with CF-Connecting-IP, set by Cloudflare in front.
+# App Runner has no equivalent single trusted header, and its proxy IPs are not
+# published as a stable range to feed to SetTrustedProxies.
+#
+# Decide one of these before relying on the limiter in production:
+#   1. Put CloudFront in front and trust CloudFront-Viewer-Address (adds a service).
+#   2. Determine App Runner's proxy CIDR and use r.SetTrustedProxies(thatRange).
+#   3. Accept a global limit and raise it, documenting that it is not per-client.
+# ---------------------------------------------------------------------------
