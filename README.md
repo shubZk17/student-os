@@ -10,18 +10,18 @@ StudentOS is a personal operating system and opportunity discovery platform tail
 
 * **Personalized Opportunity Discovery:** Multi-signal matching engine ranks internships and jobs according to your profile, graduation year, target roles, location preferences, and verified skills.
 * **Explainable Matching ("Why am I seeing this?"):** Every match returns positive reasons (e.g., `✓ Python in profile`, `✓ Preferred location: Bangalore`) and actionable gap analysis (e.g., `⚠ Docker required but not in profile`).
-* **Application Tracker:** Kanban-style application management (`Saved` ➔ `Applied` ➔ `Assessment` ➔ `Interview` ➔ `Offer` / `Rejected`) with interview logs and follow-up reminders.
+* **Application Tracker:** Kanban-style application management (`Saved` ➔ `Applied` ➔ `Assessment` ➔ `Interview` ➔ `Offer` / `Rejected`), with notes and an interview date per application.
 * **Projects & Portfolio Showcase:** Maintain portfolio projects linked directly to verified skills that dynamically boost opportunity recommendation scores.
 * **Personalized Dashboard:** A single daily command center highlighting upcoming interview schedules, urgent deadlines, new high matches, and profile completion strength.
-* **Structured Job Ingestion:** Pulls student roles (internships, new-grad, early-career) from public Greenhouse, Lever and Ashby job boards every 6 hours, tags skills, and closes postings that disappear.
-* **Cloud Deployable:** One-click Render Blueprint (`render.yaml`), backed by PostgreSQL with `pgvector`, with zero expensive LLM search dependencies.
+* **Structured Job Ingestion:** Pulls student roles (internships, new-grad, early-career) from public Greenhouse, Lever and Ashby job boards, tags skills, and closes postings that disappear. Runs on demand — see [Current limitations](#current-limitations).
+* **Cloud Deployable:** One-click Render Blueprint (`render.yaml`), with zero LLM or paid search dependencies — matching is deterministic and runs in-process.
 
 ---
 
 ## System Architecture
 
 ```
-                       [ React 19 SPA (Vite + TypeScript + Tailwind) ]
+                       [ React 18 SPA (Vite + TypeScript + Tailwind) ]
                                             │
                                             │ REST APIs / JWT Auth
                                             ▼
@@ -33,16 +33,17 @@ StudentOS is a personal operating system and opportunity discovery platform tail
                 └───────────────────────────┼───────────────────────────┘
                                             │
                                             ▼
-                           [ PostgreSQL 16 + pgvector ]
+                              [ PostgreSQL 16 ]
 ```
 
 ---
 
 ## Tech Stack
 
-* **Backend:** Go 1.24+, Gin HTTP router, `pgx/v5` PostgreSQL driver, Argon2id, JWT.
-* **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Lucide React, TanStack Query.
-* **Database:** PostgreSQL 16 with `pgvector` extension for semantic embeddings.
+* **Backend:** Go 1.22, Gin HTTP router, `pgx/v5` PostgreSQL driver, Argon2id, JWT.
+* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide React, React Router.
+* **Database:** PostgreSQL 16. The schema declares the `vector` extension and two
+  `embedding` columns, but nothing writes to them yet — see [Current limitations](#current-limitations).
 * **Infrastructure:** Render (`render.yaml`): managed PostgreSQL, Docker web service, static site.
 
 ---
@@ -76,7 +77,7 @@ Student OS/
 │   │   ├── matching/         # Explainable matching engine & tests
 │   │   ├── applications/     # Kanban application tracking
 │   │   ├── projects/         # Portfolio & project skills
-│   │   ├── opportunities/    # Polymorphic opportunities
+│   │   ├── ingest/           # Job-board ingestion, callable from CLI or API
 │   │   ├── notifications/    # In-app notifications
 │   │   ├── dashboard/        # Command-center metrics
 │   │   ├── database/         # Connection pooling
@@ -142,6 +143,12 @@ $$S = (0.40 \cdot S_{\text{skill}}) + (0.20 \cdot S_{\text{role}}) + (0.15 \cdot
 2. **Stage 2 (Multi-Signal Scoring):** Compute weighted overlap of candidate skills, target roles, locations, and portfolio relevance.
 3. **Stage 3 (Explainability):** Generate verified bullet points explaining positive signals and highlight missing requirements.
 
+> **On the semantic term.** `S_sem` is wired into the formula but no embeddings are
+> generated today, so it is always supplied as `0`. The engine then substitutes the mean
+> of the skill, role and location scores, which means that 10% currently acts as extra
+> weight on those three deterministic signals rather than as semantic similarity.
+> The weights are left as-is so the behaviour is not silently changed.
+
 ---
 
 ## Live environments
@@ -180,6 +187,33 @@ in the project's environment variables to the API URL.
 
 Demo data (`seeds/`) is never deployed. Job boards can be changed with the
 `GREENHOUSE_BOARDS`, `LEVER_COMPANIES` and `ASHBY_BOARDS` env vars on the worker.
+
+---
+
+## Current limitations
+
+An honest list of what is **not** true of the deployed system today.
+
+* **Job ingestion is not scheduled in production.** The ingestion code
+  (`backend/cmd/worker`, `backend/internal/ingest`) works and is run on demand with
+  `make worker`. It is not on a timer, because Render has no free cron tier, so the
+  opportunity set does not refresh by itself. The 6-hour cadence is the intended
+  schedule, not the running one.
+* **Semantic / vector matching is not implemented.** The schema declares the `vector`
+  extension and `embedding vector(384)` columns, but no code generates, stores or
+  queries an embedding. See the note under the matching formula.
+* **No file uploads.** `resume_url` and `portfolio_url` are text fields for links the
+  student pastes in; nothing is stored server-side, and there is no object storage.
+* **Free-tier hosting caveats.** The API sleeps when idle, so the first request after a
+  quiet period is slow. The Render free PostgreSQL instance expires 30 days after
+  creation (created 2026-09-20).
+* **Notifications are read-only in practice.** They are created by the backend and can
+  be marked read; there is no push, email or digest delivery.
+* **Interview scheduling is minimal.** An application can carry an `interview_date`, but
+  there is no calendar integration or reminder delivery.
+* **AWS migration is planned, not done.** `AWS_MIGRATION_PLAN.md` on the
+  `feat/aws-ship-it` branch documents the target AWS architecture and the code prepared
+  for it. No AWS resources exist.
 
 ---
 
